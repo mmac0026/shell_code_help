@@ -145,7 +145,7 @@ csvsql --query "SELECT * FROM example_file LIMIT 1" \
 
 # Save the output to a new file
 csvsql --query "SELECT * FROM example_file LIMIT 1" \
-  example_file.csv > example_file_first10.csv
+  example_file.csv > example_file_first1.csv
 
 # Pipe the output to another command
 csvsql --query "SELECT * FROM example_file LIMIT 1" \
