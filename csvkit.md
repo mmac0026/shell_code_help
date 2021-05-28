@@ -63,7 +63,7 @@ Most often, `csvlook` can be used with the CSV file name alone, but can be a use
 # Preview data using csvlook
 csvlook example_file.csv
 ```
-Output:
+> Output:
 ```
 | track_id           | popularity |
 | ------------------ | ---------- |
@@ -89,7 +89,7 @@ Similar to `csvlook`, often you will simply use `csvstat` with the file name.
 # Get summary statistics on a CSV file
 csvstat example_file.csv
 ```
-Output:
+> Output:
 ```
 1. "track_id"
 
@@ -116,7 +116,161 @@ Output:
                         6 (5x)
 ```
 
-## csvsql
+
+## Filtering data
+
+Using tools provided by `csvkit`, we can subset CSV file data via commands that target either columns or rows.
+
+`csvcut`: filters data using __column__ name or position.
+
+`csvgrep`: filters data by __row__ value through an exact match, pattern matching, or regex.
+
+### csvcut
+
+`csvcut` filters and truncates CSV files by column name or column position.
+
+You can view the documentation for this command using:
+
+```bash
+csvcut -h
+```
+
+If you don't know the names or order of the columns in the document, you can use the `-n` or `--names` flag to print all column names.
+
+```bash
+# Return the names of the columns
+csvcut -n example_file.csv
+```
+> Output:
+```
+1: track_id
+2: popularity
+```
+
+The `-c` flag is used to select the columns you want to retain, either by using their names as a string, or by providing the column position.
+Similar to R, column positions are indexed beginning at `1`, meaning that the first column is given a value of one (as opposed to Python, for example, which uses zero-based indexing).
+
+```bash
+# Return the first column in the data by position
+csvcut -c 1 example_file.csv
+
+# Return the first column in the data by name
+csvcut -c "track_id" example_file.csv
+```
+> Output (identical in each case):
+```
+track_id
+118GTY18274hasbf87
+17GTSpt125SfbcT267
+```
+
+To select multiple columns, either names or positions can be given together, and separated using a comma (`,`).
+There can be no spaces either side of the comma.
+
+```bash
+# Return the first and second columns in the data by position
+csvcut -c 1,2 example_file.csv
+
+# Return the first and second columns in the data by name
+csvcut -c "track_id","popularity" example_file.csv
+```
+> Output (identical in each case):
+```
+track_id,popularity
+118GTY18274hasbf87,7
+17GTSpt125SfbcT267,6
+```
+
+### csvgrep
+
+`csvgrep` filters by row using exact match or regex fuzzy matching, and must be paired with one of these options:
+
+- `-m`: followed by the exact row value to filter
+- `-r`: followed with a regex pattern
+- `-f`: followed by the path to a file
+
+You can view the documentation for this command using:
+
+```bash
+csvgrep -h
+```
+
+You can return an entire row of data by selecting the column to match with, using `-c`, and then inputing a term to match with `-m`.
+The column can be defined either by name or position, just as with `csvcut`.
+
+```bash
+# Filter track_id for rows matching "118GTY18274hasbf87"
+csvgrep -c "track_id" -m 118GTY18274hasbf87 example_file.csv
+
+# Get the same result using column position
+csvgrep -c 1 -m 118GTY18274hasbf87 example_file.csv
+```
+> Output (identical in each case):
+```
+track_id,popularity
+118GTY18274hasbf87,7
+```
+
+Similarly, you could use regex patterns instead of an each match to filter for matches over multiple rows.
+
+### csvstack
+
+`csvstack` stacks up the rows from two or more CSV files. The columns of these files must be identical.
+
+This is most useful when you have data that has been transferred in chunks, perhaps due to download/bandwidth limits.
+
+You can view the documentation for this command using:
+
+```bash
+csvstack -h
+```
+
+You can first use `csvlook` to confirm that the data schema match between files.
+
+If they do, the command simply takes two or more input CSV files, and can be redirected to a new file.
+If you do not redirect it, the output will be displayed on the console.
+
+```bash
+# Stack two files together and output to a new file
+csvstack example_file_1a.csv example_file_1b.csv > example_file_1_complete.csv
+
+# Check the output looks as expected
+csvlook example_file_1_complete.csv
+```
+> Output:
+```
+| track_id           | popularity |
+| ------------------ | ---------- |
+| 118GTY18274hasbf87 |          7 |
+| 17GTSpt125SfbcT267 |          6 |
+| 18Fg56Ash1hF980jbA |          4 |
+| F8nas2nfasfKielA54 |          5 |
+```
+
+It may also be useful to know which file the data originated from.
+This can be easily achieved using the `-g` flag, and specifying names for identification.
+
+The new column name will be "group" by default, but can be customised by calling the `-n` flag, and specifying a new column name.
+
+```bash
+# Stack two files together, specify origin file names, and name the new column "source"
+csvstack -g "file1a","file1b" -n "source" \
+example_file_1a.csv example_file_1b.csv > example_file_1_complete.csv | csvlook
+```
+> Output:
+```
+| source | track_id           | popularity |
+| ------ | ------------------ | ---------- |
+| file1a | 118GTY18274hasbf87 |          7 |
+| file1a | 17GTSpt125SfbcT267 |          6 |
+| file1b | 18Fg56Ash1hF980jbA |          4 |
+| file1b | F8nas2nfasfKielA54 |          5 |
+```
+
+
+## Handling data using SQL queries
+
+### csvsql
 
 `csvsql` applies SQL statements to one or more CSV files. 
 It creates an in-memory SQL database that temporarily hosts the files being processed, and is therefore only suitable for small/medium-sized files.
@@ -127,7 +281,7 @@ You can view the documentation for this command using:
 csvsql -h
 ```
 
-### Applying SQL to a local CSV file
+#### Applying SQL to a local CSV file
 
 An example of the use of `csvsql` would be selecting every column from a given CSV file, and then viewing just the first row.
 
